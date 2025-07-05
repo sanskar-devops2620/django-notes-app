@@ -1,28 +1,59 @@
+@Library("shared") _
 pipeline {
-    agent any
-    stages{
-        stage("Clone Code"){
+    agent { label "ubuntu" }
+
+    stages {
+        stage("Hello"){
             steps{
-                git url: "https://github.com/LondheShubham153/django-notes-app.git", branch: "main"
-            }
-        }
-        stage("Build and Test"){
-            steps{
-                sh "docker build . -t note-app-test-new"
-            }
-        }
-        stage("Push to Docker Hub"){
-            steps{
-                withCredentials([usernamePassword(credentialsId:"dockerHub",passwordVariable:"dockerHubPass",usernameVariable:"dockerHubUser")]){
-                sh "docker tag note-app-test-new ${env.dockerHubUser}/note-app-test-new:latest"
-                sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPass}"
-                sh "docker push ${env.dockerHubUser}/note-app-test-new:latest"
+                script{
+                    hello()
                 }
             }
         }
-        stage("Deploy"){
-            steps{
-                sh "docker-compose down && docker-compose up -d"
+        stage("Code") {
+            steps {
+                script{
+                    clone("https://github.com/sanskar-devops2620/django-notes-app.git", "main")
+                }
+
+            }
+        }
+
+        stage("Build") {
+            steps {
+                script{
+                    docker_build("notes-app", "latest", "sanskarwhizhack")
+                }
+
+            }
+        }
+
+        stage("Test") {
+            steps {
+                echo "This is testing a code"
+                // Add your test script here
+            }
+        }
+
+        stage("push to docker hub") {
+            steps {
+                echo "This is pushing the image to docker hub"
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhubcred',
+                    usernameVariable: 'dockerHubUser',
+                    passwordVariable: 'dockerHubPass'
+                )]) {
+                    sh "docker login -u ${dockerHubUser} -p ${dockerHubPass}"
+                    sh "docker image tag notes-app:latest sanskarwhizhack/notes-app:latest"
+                    sh "docker push sanskarwhizhack/notes-app:latest"
+                }
+            }
+        }
+
+        stage("Deploy") {
+            steps {
+                echo "This is deploying a code"
+                sh "docker-compose up -d"
             }
         }
     }
